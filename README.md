@@ -93,6 +93,24 @@ Devices: 2
 1: CPU | CPU | AMD Ryzen 7 4800H with Radeon Graphics | 6468.5 / 16253.3 MiB
 ```
 
+列出模型内置的说话人（只读 GGUF 元数据，不加载权重）：
+
+```powershell
+.\build\bin\Release\qwen3tts-cli.exe `
+  --model .\testdata\qwen3-tts-talker-0.6b-customvoice-q8_0.gguf `
+  --list-speakers
+```
+
+```text
+Speakers: 9
+0: aiden | id=2861
+1: dylan | id=2878 | dialect=beijing_dialect
+...
+5: serena | id=3066
+```
+
+名字可直接用于 `--speaker`；带 `dialect` 的说话人会据此自动选择语言。
+
 CLI 默认显示模型加载、Prompt/prefill、Talker 每帧和 CodePredictor
 每个 code group 的耗时、SpeechDecoder 和 WAV 写入耗时。Debug 构建会直接
 输出 ggml allocator 日志。

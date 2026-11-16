@@ -85,12 +85,12 @@ public:
     Qwen3TTSModel(const Qwen3TTSModel&) = delete;
     Qwen3TTSModel& operator=(const Qwen3TTSModel&) = delete;
 
+    // load 之后 context 由 model 持有，后续调用不再需要传。
     Status load(Qwen3TTSContext& context);
 
     CodeGenerationOptions generation_defaults() const;
 
     Status generate_codes(
-        Qwen3TTSContext& context,
         const std::vector<float>& prefill_embeddings,
         int64_t prefill_frames,
         const std::vector<float>& trailing_text_hidden,
@@ -100,26 +100,22 @@ public:
         SpeechCodeMatrix& codes);
 
     Status generate_custom_voice_codes(
-        Qwen3TTSContext& context,
         const std::string& text,
         const CustomVoiceOptions& voice_options,
         const CodeGenerationOptions& options,
         SpeechCodeMatrix& codes);
 
     Status generate_custom_voice(
-        Qwen3TTSContext& context,
         const std::string& text,
         const CustomVoiceOptions& voice_options,
         const CodeGenerationOptions& options,
         AudioBuffer& audio);
 
     Status decode_codes(
-        Qwen3TTSContext& context,
         const SpeechCodeMatrix& codes,
         AudioBuffer& audio);
 
     Status build_custom_voice_prompt(
-        Qwen3TTSContext& context,
         const std::string& text,
         const CustomVoiceOptions& voice_options,
         std::vector<float>& prefill_embeddings,
@@ -130,6 +126,8 @@ private:
         const std::unordered_map<std::string, int32_t>& values,
         const std::string& name) const;
 
+    // load 时记录；生命周期必须覆盖本对象的所有调用。
+    Qwen3TTSContext* context_ = nullptr;
     std::unique_ptr<Talker> talker_;
     std::unique_ptr<CodePredictor> code_predictor_;
     std::unique_ptr<SpeechTokenizer> speech_tokenizer_;

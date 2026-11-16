@@ -1,6 +1,8 @@
 #include "qwen3_tts.h"
 #include "wav_writer.h"
 
+#include "gguf_model.h"
+
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -38,6 +40,7 @@ struct Arguments {
     std::optional<float> repetition_penalty;
     uint64_t seed = 0;
     bool list_devices = false;
+    bool list_speakers = false;
 };
 
 bool parse_args(int argc, char** argv, Arguments& args) {
@@ -45,6 +48,10 @@ bool parse_args(int argc, char** argv, Arguments& args) {
         const std::string option = argv[i];
         if (option == "--list-devices") {
             args.list_devices = true;
+            continue;
+        }
+        if (option == "--list-speakers") {
+            args.list_speakers = true;
             continue;
         }
         if (option == "--greedy") {
@@ -104,6 +111,7 @@ bool parse_args(int argc, char** argv, Arguments& args) {
         }
     }
     return args.list_devices ||
+        args.list_speakers ||
         (!args.talker_model.empty() &&
          !args.speech_model.empty() &&
          !args.text.empty());
@@ -119,7 +127,8 @@ void usage() {
            "[--talker-greedy] [--subtalker-greedy] "
            "[--device NAME] [--threads N] "
            "[--output FILE.wav] [--codes-output FILE.bin]\n"
-           "       qwen3tts-cli --list-devices\n";
+           "       qwen3tts-cli --list-devices\n"
+           "       qwen3tts-cli --model TALKER.gguf --list-speakers\n";
 }
 
 const char* device_type_name(enum ggml_backend_dev_type type) {
@@ -166,6 +175,41 @@ void list_devices() {
     }
 }
 
+// 只读 talker GGUF 的元数据，不加载权重、不初始化 backend。
+int list_speakers(const std::string& path) {
+    std::unique_ptr<qwen3_tts::GGUFModel> model;
+    qwen3_tts::Status status = qwen3_tts::GGUFModel::open(path, model);
+    if (!status) {
+        std::cerr << status.message() << '\n';
+        return 1;
+    }
+
+    const std::vector<std::string> names =
+        model->get_string_array("qwen3_tts.speaker.names");
+    const std::vector<int32_t> ids =
+        model->get_i32_array("qwen3_tts.speaker.ids");
+    const std::vector<std::string> dialects =
+        model->get_string_array("qwen3_tts.speaker.dialects");
+    if (names.empty()) {
+        std::cerr << "no speaker metadata in " << path << '\n';
+        return 1;
+    }
+    if (names.size() != ids.size() || names.size() != dialects.size()) {
+        std::cerr << "speaker name/id/dialect arrays have different sizes\n";
+        return 1;
+    }
+
+    std::cout << "Speakers: " << names.size() << '\n';
+    for (size_t i = 0; i < names.size(); ++i) {
+        std::cout << i << ": " << names[i] << " | id=" << ids[i];
+        if (!dialects[i].empty()) {
+            std::cout << " | dialect=" << dialects[i];
+        }
+        std::cout << '\n';
+    }
+    return 0;
+}
+
 #if defined(_WIN32)
 std::string utf8_from_wide(const wchar_t* value) {
     if (value == nullptr || value[0] == L'\0') {
@@ -209,21 +253,6 @@ int run(int argc, char** argv) {
         std::snprintf(text, sizeof(text), "%.2fs", seconds);
         return std::string(text);
     };
-    const auto audio_duration_text = [](const qwen3_tts::AudioBuffer& audio) {
-        const int64_t sample_count =
-            static_cast<int64_t>(audio.samples.size());
-        const int64_t samples_per_second =
-            static_cast<int64_t>(audio.sample_rate) * audio.channels;
-        if (sample_count <= 0 || samples_per_second <= 0) {
-            return std::string("0.000s");
-        }
-        const double seconds =
-            static_cast<double>(sample_count) /
-            static_cast<double>(samples_per_second);
-        char text[32];
-        std::snprintf(text, sizeof(text), "%.3fs", seconds);
-        return std::string(text);
-    };
     Arguments args;
     if (!parse_args(argc, argv, args)) {
         usage();
@@ -232,6 +261,13 @@ int run(int argc, char** argv) {
     if (args.list_devices) {
         list_devices();
         return 0;
+    }
+    if (args.list_speakers) {
+        if (args.talker_model.empty()) {
+            usage();
+            return 2;
+        }
+        return list_speakers(args.talker_model);
     }
 
     qwen3_tts::Qwen3TTSContextParams context_params;
@@ -283,7 +319,6 @@ int run(int argc, char** argv) {
         qwen3_tts::SpeechCodeMatrix codes;
         std::cerr << "Generating speech codes...\n";
         status = model.generate_custom_voice_codes(
-            context,
             args.text,
             voice,
             options,
@@ -321,12 +356,12 @@ int run(int argc, char** argv) {
         if (status) {
             const auto decode_start = clock::now();
             std::cerr << "Decoding speech...\n";
-            status = model.decode_codes(context, codes, audio);
+            status = model.decode_codes(codes, audio);
             if (status) {
                 std::cerr << "Speech decoded in "
                           << elapsed_text(decode_start)
                           << " (audio "
-                          << audio_duration_text(audio) << ")\n";
+                          << audio.duration_seconds() << "s)\n";
             }
         }
         if (status) {
@@ -342,7 +377,7 @@ int run(int argc, char** argv) {
             std::cout << "Wrote " << args.output << " ("
                       << audio.samples.size() << " samples, "
                       << audio.sample_rate << " Hz, "
-                      << audio_duration_text(audio) << ")\n";
+                      << audio.duration_seconds() << "s)\n";
         }
     }
 

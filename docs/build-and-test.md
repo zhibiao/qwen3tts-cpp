@@ -144,6 +144,26 @@ CUDA_PATH_V13_5=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.5
 该命令不需要 `--model`、`--speech-tokenizer` 或 `--text`。设备名称可以直接用于
 `--device`，例如 `CPU`、`CUDA0`。
 
+列出模型内置的说话人（只读 GGUF 元数据，不加载权重、不需要 backend）：
+
+```powershell
+.\build\bin\Release\qwen3tts-cli.exe `
+  --model .\testdata\qwen3-tts-talker-0.6b-customvoice-q8_0.gguf `
+  --list-speakers
+```
+
+```text
+Speakers: 9
+0: aiden | id=2861
+1: dylan | id=2878 | dialect=beijing_dialect
+2: eric | id=2875 | dialect=sichuan_dialect
+...
+5: serena | id=3066
+```
+
+`dialect` 非空表示该说话人有方言映射：指定它时 `--language` 可省略，会自动选对应
+语言。名字可直接用于 `--speaker`。
+
 ```powershell
 .\build\bin\Release\qwen3tts-cli.exe `
   --model .\testdata\qwen3-tts-talker-0.6b-customvoice-bf16.gguf `

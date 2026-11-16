@@ -139,7 +139,6 @@ int main() {
     std::vector<float> actual_prefill;
     std::vector<float> actual_pad;
     CHECK_STATUS(model.build_custom_voice_prompt(
-        context,
         "你好，世界。",
         voice,
         actual_prefill,
@@ -162,7 +161,6 @@ int main() {
 
     qwen3_tts::SpeechCodeMatrix codes;
     CHECK_STATUS(model.generate_custom_voice_codes(
-        context,
         "你好，世界。",
         voice,
         options,
@@ -185,7 +183,6 @@ int main() {
 
     qwen3_tts::AudioBuffer audio;
     CHECK_STATUS(model.generate_custom_voice(
-        context,
         "你好，世界。",
         voice,
         options,
@@ -207,7 +204,6 @@ int main() {
 
     voice.speaker = "not-a-speaker";
     CHECK(!model.generate_custom_voice_codes(
-        context,
         "你好，世界。",
         voice,
         options,
@@ -215,7 +211,6 @@ int main() {
     voice.speaker = "serena";
     voice.language = "not-a-language";
     CHECK(!model.generate_custom_voice_codes(
-        context,
         "你好，世界。",
         voice,
         options,
@@ -224,7 +219,6 @@ int main() {
     voice.language = "Chinese";
     voice.instruct = "Speak slowly.";
     CHECK(!model.generate_custom_voice_codes(
-        context,
         "ä½ å¥½ï¼Œä¸–ç•Œã€‚",
         voice,
         options,

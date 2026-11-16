@@ -300,6 +300,7 @@ Status Qwen3TTSModel::load(Qwen3TTSContext& context) {
     code_predictor_ = std::move(code_predictor);
     speech_tokenizer_ = std::move(speech_tokenizer);
     config_ = std::move(config);
+    context_ = &context;
     loaded_ = true;
     return Status::ok();
 }
@@ -339,11 +340,14 @@ CodeGenerationOptions Qwen3TTSModel::generation_defaults() const {
 }
 
 Status Qwen3TTSModel::build_custom_voice_prompt(
-    Qwen3TTSContext& context,
     const std::string& text,
     const CustomVoiceOptions& voice_options,
     std::vector<float>& prefill_embeddings,
     std::vector<float>& tts_pad_embedding) {
+    if (context_ == nullptr) {
+        return Status::error("Qwen3TTSModel is not loaded");
+    }
+    Qwen3TTSContext& context = *context_;
     prefill_embeddings.clear();
     tts_pad_embedding.clear();
     if (!loaded_) {
@@ -531,17 +535,19 @@ Status Qwen3TTSModel::build_custom_voice_prompt(
 }
 
 Status Qwen3TTSModel::generate_custom_voice_codes(
-    Qwen3TTSContext& context,
     const std::string& text,
     const CustomVoiceOptions& voice_options,
     const CodeGenerationOptions& options,
     SpeechCodeMatrix& codes) {
+    if (context_ == nullptr) {
+        return Status::error("Qwen3TTSModel is not loaded");
+    }
+    Qwen3TTSContext& context = *context_;
     codes = {};
     std::vector<float> prefill;
     std::vector<float> tts_pad_embedding;
     const auto prompt_start = std::chrono::steady_clock::now();
     Status status = build_custom_voice_prompt(
-        context,
         text,
         voice_options,
         prefill,
@@ -561,7 +567,6 @@ Status Qwen3TTSModel::generate_custom_voice_codes(
     }
 
     return generate_codes(
-        context,
         prefill,
         static_cast<int64_t>(
             prefill.size() / config_.talker.decoder.embedding_length),
@@ -573,15 +578,17 @@ Status Qwen3TTSModel::generate_custom_voice_codes(
 }
 
 Status Qwen3TTSModel::generate_custom_voice(
-    Qwen3TTSContext& context,
     const std::string& text,
     const CustomVoiceOptions& voice_options,
     const CodeGenerationOptions& options,
     AudioBuffer& audio) {
+    if (context_ == nullptr) {
+        return Status::error("Qwen3TTSModel is not loaded");
+    }
+    Qwen3TTSContext& context = *context_;
     audio = {};
     SpeechCodeMatrix codes;
     Status status = generate_custom_voice_codes(
-        context,
         text,
         voice_options,
         options,
@@ -593,9 +600,12 @@ Status Qwen3TTSModel::generate_custom_voice(
 }
 
 Status Qwen3TTSModel::decode_codes(
-    Qwen3TTSContext& context,
     const SpeechCodeMatrix& codes,
     AudioBuffer& audio) {
+    if (context_ == nullptr) {
+        return Status::error("Qwen3TTSModel is not loaded");
+    }
+    Qwen3TTSContext& context = *context_;
     if (!loaded_) {
         audio = {};
         return Status::error("Qwen3TTS is not loaded");
@@ -604,7 +614,6 @@ Status Qwen3TTSModel::decode_codes(
 }
 
 Status Qwen3TTSModel::generate_codes(
-    Qwen3TTSContext& context,
     const std::vector<float>& prefill_embeddings,
     int64_t prefill_frames,
     const std::vector<float>& trailing_text_hidden,
@@ -612,6 +621,10 @@ Status Qwen3TTSModel::generate_codes(
     const std::vector<float>& tts_pad_embedding,
     const CodeGenerationOptions& options,
     SpeechCodeMatrix& codes) {
+    if (context_ == nullptr) {
+        return Status::error("Qwen3TTSModel is not loaded");
+    }
+    Qwen3TTSContext& context = *context_;
     codes = {};
     if (!loaded_) {
         return Status::error("Qwen3TTS is not loaded");

@@ -70,7 +70,6 @@ int main() {
     predictor_sampling.repetition_penalty = 1.0f;
     options.code_predictor = predictor_sampling;
     CHECK_STATUS(model.generate_codes(
-        context,
         prefill,
         kPrefillFrames,
         trailing,
@@ -84,7 +83,6 @@ int main() {
 
     qwen3_tts::SpeechCodeMatrix repeated;
     CHECK_STATUS(model.generate_codes(
-        context,
         prefill,
         kPrefillFrames,
         trailing,
@@ -97,7 +95,6 @@ int main() {
     options.codec_eos_token_id = expected_codes[0];
     qwen3_tts::SpeechCodeMatrix stopped;
     CHECK_STATUS(model.generate_codes(
-        context,
         prefill,
         kPrefillFrames,
         trailing,
