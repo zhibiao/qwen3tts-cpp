@@ -848,6 +848,22 @@ std::vector<std::string> pretokenize(const std::string& text) {
             continue;
         }
 
+        if (!is_whitespace(runes[i].value) &&
+            !is_unicode_letter(runes[i].value) &&
+            !is_unicode_number(runes[i].value) &&
+            runes[i].value != '\r' &&
+            runes[i].value != '\n' &&
+            i + 1 < runes.size() &&
+            is_unicode_letter(runes[i + 1].value)) {
+            size_t end = i + 2;
+            while (end < runes.size() && is_unicode_letter(runes[end].value)) {
+                ++end;
+            }
+            pieces.emplace_back(text.substr(begin, runes[end - 1].end - begin));
+            i = end;
+            continue;
+        }
+
         if (is_whitespace(runes[i].value)) {
             size_t end = i + 1;
             while (end < runes.size() && is_whitespace(runes[end].value)) {

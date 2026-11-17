@@ -11,7 +11,7 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-REFERENCE_ROOT = PROJECT_ROOT / "vendor" / "qwen3-tts"
+REFERENCE_ROOT = PROJECT_ROOT / "docs" / "qwen3-tts"
 
 
 def parse_args() -> argparse.Namespace:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the vendored Python CustomVoice reference and write a WAV file."""
+"""Run the Python CustomVoice reference and write a WAV file."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-REFERENCE_ROOT = PROJECT_ROOT / "vendor" / "qwen3-tts"
+REFERENCE_ROOT = PROJECT_ROOT / "docs" / "qwen3-tts"
 
 
 def main() -> int:

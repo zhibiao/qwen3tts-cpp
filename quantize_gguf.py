@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Quantize Qwen3-TTS Talker GGUF files.
+"""Convert Qwen3-TTS Talker GGUF matrix weights to a compact tensor format.
 
 SpeechTokenizer GGUF files are intentionally unsupported. They must remain in
 their original F32 form so SpeechDecoder precision is not affected by
-quantization.
+conversion.
 """
 
 from __future__ import annotations
@@ -22,12 +22,13 @@ class QuantizationError(RuntimeError):
 
 FILE_TYPES = {
     "q8_0": 7,
+    "bf16": 32,
 }
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Quantize a Qwen3-TTS Talker GGUF file"
+        description="Convert a Qwen3-TTS Talker GGUF file"
     )
     parser.add_argument(
         "--input",
@@ -44,7 +45,7 @@ def parse_args() -> argparse.Namespace:
         "--type",
         required=True,
         choices=sorted(FILE_TYPES),
-        help="Quantization preset",
+        help="Output tensor format",
     )
     parser.add_argument(
         "--overwrite",
@@ -67,7 +68,7 @@ def load_gguf() -> tuple[Any, Any, Any, Any]:
     except ModuleNotFoundError as error:
         raise QuantizationError(
             f"missing Python dependency: {error.name}\n"
-            "Install requirements.txt before quantizing."
+            "Install requirements.txt before converting."
         ) from error
     return (
         np,
@@ -138,7 +139,7 @@ def copy_metadata(
     )
     writer.add_key_value(
         "qwen3_tts.quantization.policy",
-        "talker-q8_0-matrix-weights-v1",
+        f"talker-{preset}-matrix-weights-v1",
         gguf_value_type.STRING,
     )
     return arch
@@ -171,18 +172,38 @@ def is_eligible_weight(np: Any, tensor: Any, block_size: int) -> bool:
     return all(int(value) > 0 for value in shape)
 
 
-def quantize_tensor(
+def float32_to_bf16_bits(np: Any, data: Any) -> Any:
+    values = np.ascontiguousarray(data, dtype=np.float32)
+    bits = values.view(np.uint32)
+    rounding_bias = np.uint32(0x7FFF) + ((bits >> 16) & 1)
+    rounded = bits + rounding_bias
+    return (rounded >> 16).astype(np.uint16)
+
+
+def convert_tensor(
     np: Any,
     quants: Any,
     tensor: Any,
     qtypes: Any,
+    preset: str,
 ) -> Any | None:
-    qtype = qtypes.Q8_0
-    block_size, _ = quants.GGML_QUANT_SIZES[qtype]
+    if preset == "q8_0":
+        qtype = qtypes.Q8_0
+        block_size, _ = quants.GGML_QUANT_SIZES[qtype]
+    elif preset == "bf16":
+        qtype = qtypes.BF16
+        block_size = 1
+    else:
+        raise QuantizationError(f"unsupported output type: {preset}")
+
     if not is_eligible_weight(np, tensor, block_size):
         return None
     data = dequantize_tensor(np, quants, tensor)
-    return quants.quantize(data, qtype), qtype
+    if preset == "q8_0":
+        converted = quants.quantize(data, qtype)
+    else:
+        converted = float32_to_bf16_bits(np, data).view(np.uint8)
+    return converted, qtype
 
 
 def write_gguf(writer: Any, temporary: Path, output: Path) -> None:
@@ -238,15 +259,16 @@ def quantize(args: argparse.Namespace) -> None:
     counts: Counter[str] = Counter()
     for index, tensor in enumerate(reader.tensors, 1):
         try:
-            result = quantize_tensor(
+            result = convert_tensor(
                 np,
                 quants,
                 tensor,
                 qtypes,
+                args.type,
             )
         except Exception as error:
             raise QuantizationError(
-                f"failed to quantize tensor {tensor.name}: {error}"
+                f"failed to convert tensor {tensor.name}: {error}"
             ) from error
         if result is None:
             writer.add_tensor(
@@ -287,11 +309,11 @@ def main() -> int:
     try:
         quantize(args)
     except QuantizationError as error:
-        print(f"Quantization failed: {error}", file=sys.stderr)
+        print(f"Conversion failed: {error}", file=sys.stderr)
         return 1
     except Exception as error:
         print(
-            f"Quantization failed: {type(error).__name__}: {error}",
+            f"Conversion failed: {type(error).__name__}: {error}",
             file=sys.stderr,
         )
         return 1

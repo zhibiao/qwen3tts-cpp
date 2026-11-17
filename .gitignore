@@ -11,4 +11,4 @@ vendor/ggml-0.29.0
 vendor/nlohmann
 vendor/qwen3-tts
 
-reference/python/qwen3-tts
+docs/qwen3-tts
