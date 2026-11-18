@@ -77,8 +77,8 @@ they can be stored together in `bin/`.
 
 ## Tests
 
-Default presets set `BUILD_TESTING=OFF`. Test commands, coverage, and RTF
-benchmarks are documented in [TESTING.md](TESTING.md).
+Default presets set `BUILD_TESTING=OFF`. Test commands and coverage are
+documented in [TESTING.md](TESTING.md). RTF benchmarks are in the root README.
 
 ## CUDA architectures
 
