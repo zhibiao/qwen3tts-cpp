@@ -262,6 +262,15 @@ Status load_text_tokenizer_config(
     if (!status) {
         return status;
     }
+    if (model.has_key("qwen3_tts.text.nfc_normalization")) {
+        status = read_bool(
+            model,
+            "qwen3_tts.text.nfc_normalization",
+            config.nfc_normalization);
+        if (!status) {
+            return status;
+        }
+    }
     if (config.model != "qwen2") {
         return Status::error(
             "unsupported text tokenizer model: " + config.model);

@@ -1,8 +1,8 @@
 set(QWEN3_TTS_TEST_GGUF
-    "${PROJECT_SOURCE_DIR}/testdata/qwen3-tts-talker-0.6b-customvoice-bf16.gguf"
+    "${PROJECT_SOURCE_DIR}/models/qwen3-tts-talker-0.6b-customvoice-bf16.gguf"
 )
 set(QWEN3_TTS_TEST_SPEECH_GGUF
-    "${PROJECT_SOURCE_DIR}/testdata/qwen3-tts-speech-tokenizer-12hz-f32.gguf"
+    "${PROJECT_SOURCE_DIR}/models/qwen3-tts-speech-tokenizer-12hz-f32.gguf"
 )
 
 if(EXISTS "${QWEN3_TTS_TEST_GGUF}" AND
@@ -57,6 +57,7 @@ if(EXISTS "${QWEN3_TTS_TEST_GGUF}" AND
         "${CMAKE_CURRENT_SOURCE_DIR}/test_text_tokenizer.cpp"
         "${PROJECT_SOURCE_DIR}/src/config.cpp"
         "${PROJECT_SOURCE_DIR}/src/text_tokenizer.cpp"
+        "${PROJECT_SOURCE_DIR}/src/text_tokenizer_internal.cpp"
         "${PROJECT_SOURCE_DIR}/src/gguf_model.cpp"
     )
     qwen3_tts_configure_target(test_text_tokenizer)
@@ -64,6 +65,16 @@ if(EXISTS "${QWEN3_TTS_TEST_GGUF}" AND
         QWEN3_TTS_TEST_GGUF="${QWEN3_TTS_TEST_GGUF}"
     )
     add_test(NAME text_tokenizer COMMAND test_text_tokenizer)
+
+    add_executable(test_text_tokenizer_unicode
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_text_tokenizer_unicode.cpp"
+        "${PROJECT_SOURCE_DIR}/src/text_tokenizer_internal.cpp"
+    )
+    qwen3_tts_configure_target(test_text_tokenizer_unicode)
+    add_test(
+        NAME text_tokenizer_unicode
+        COMMAND test_text_tokenizer_unicode
+    )
 
     add_executable(test_speech_tokenizer
         "${CMAKE_CURRENT_SOURCE_DIR}/test_speech_tokenizer.cpp"
@@ -189,7 +200,7 @@ if(EXISTS "${QWEN3_TTS_TEST_GGUF}" AND
         endif()
 
         set(QWEN3_TTS_TEST_GGUF_1_7_F32
-            "${PROJECT_SOURCE_DIR}/testdata/qwen3-tts-talker-1.7b-customvoice-bf16.gguf"
+            "${PROJECT_SOURCE_DIR}/models/qwen3-tts-talker-1.7b-customvoice-bf16.gguf"
         )
         set(QWEN3_TTS_1_7_GOLDEN_DIR
             "${PROJECT_SOURCE_DIR}/testdata"
@@ -241,16 +252,16 @@ else()
 endif()
 
 set(QWEN3_TTS_EXTRA_GGUF
-    "${PROJECT_SOURCE_DIR}/testdata/qwen3-tts-talker-0.6b-customvoice-bf16.gguf"
+    "${PROJECT_SOURCE_DIR}/models/qwen3-tts-talker-0.6b-customvoice-bf16.gguf"
 )
 set(QWEN3_TTS_EXTRA_SPEECH_GGUF
-    "${PROJECT_SOURCE_DIR}/testdata/qwen3-tts-speech-tokenizer-12hz-f32.gguf"
+    "${PROJECT_SOURCE_DIR}/models/qwen3-tts-speech-tokenizer-12hz-f32.gguf"
 )
 set(QWEN3_TTS_EXTRA_Q8_GGUF
-    "${PROJECT_SOURCE_DIR}/testdata/qwen3-tts-talker-0.6b-customvoice-q8_0.gguf"
+    "${PROJECT_SOURCE_DIR}/models/qwen3-tts-talker-0.6b-customvoice-q8_0.gguf"
 )
 set(QWEN3_TTS_EXTRA_1_7_GGUF
-    "${PROJECT_SOURCE_DIR}/testdata/qwen3-tts-talker-1.7b-customvoice-bf16.gguf"
+    "${PROJECT_SOURCE_DIR}/models/qwen3-tts-talker-1.7b-customvoice-bf16.gguf"
 )
 set(QWEN3_TTS_EXTRA_TEXT_GOLDEN
     "${PROJECT_SOURCE_DIR}/testdata/text-tokenizer-golden/cases.json"
@@ -289,6 +300,7 @@ if(EXISTS "${QWEN3_TTS_EXTRA_TEXT_GOLDEN}")
         "${PROJECT_SOURCE_DIR}/src/config.cpp"
         "${PROJECT_SOURCE_DIR}/src/gguf_model.cpp"
         "${PROJECT_SOURCE_DIR}/src/text_tokenizer.cpp"
+        "${PROJECT_SOURCE_DIR}/src/text_tokenizer_internal.cpp"
     )
     target_include_directories(test_text_tokenizer_scenarios PRIVATE
         "${PROJECT_SOURCE_DIR}/vendor"

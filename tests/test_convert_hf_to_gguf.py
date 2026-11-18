@@ -73,7 +73,13 @@ class ConvertHfToGgufTests(unittest.TestCase):
                 "a b\nb c\n",
                 encoding="utf-8",
             )
-            tokens, merges, added_names, added_ids = converter.build_tokenizer(
+            (
+                tokens,
+                merges,
+                added_names,
+                added_ids,
+                nfc_normalization,
+            ) = converter.build_tokenizer(
                 model_dir,
                 {
                     "added_tokens_decoder": {
@@ -85,6 +91,27 @@ class ConvertHfToGgufTests(unittest.TestCase):
             self.assertEqual(merges, ["a b", "b c"])
             self.assertEqual(added_names, ["<|special|>"])
             self.assertEqual(added_ids, [2])
+            self.assertFalse(nfc_normalization)
+
+            (model_dir / "tokenizer.json").write_text(
+                json.dumps({"normalizer": {"type": "NFC"}}),
+                encoding="utf-8",
+            )
+            (
+                tokens,
+                merges,
+                added_names,
+                added_ids,
+                nfc_normalization,
+            ) = converter.build_tokenizer(model_dir, {})
+            self.assertTrue(nfc_normalization)
+
+            (model_dir / "tokenizer.json").write_text(
+                json.dumps({"normalizer": {"type": "NFKC"}}),
+                encoding="utf-8",
+            )
+            with self.assertRaises(converter.ConversionError):
+                converter.build_tokenizer(model_dir, {})
 
 
 if __name__ == "__main__":

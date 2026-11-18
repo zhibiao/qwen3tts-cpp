@@ -76,7 +76,7 @@ def load_json(path: Path) -> dict[str, Any]:
 def build_tokenizer(
     model_dir: Path,
     tokenizer_config: dict[str, Any],
-) -> tuple[list[str], list[str], list[str], list[int]]:
+) -> tuple[list[str], list[str], list[str], list[int], bool]:
     vocab = load_json(model_dir / "vocab.json")
     added_tokens_decoder = tokenizer_config.get("added_tokens_decoder", {})
     if not isinstance(added_tokens_decoder, dict):
@@ -132,11 +132,27 @@ def build_tokenizer(
     if not merges:
         raise ConversionError("merges.txt is empty")
 
+    nfc_normalization = False
+    tokenizer_json_path = model_dir / "tokenizer.json"
+    if tokenizer_json_path.exists():
+        tokenizer_json = load_json(tokenizer_json_path)
+        normalizer = tokenizer_json.get("normalizer")
+        if normalizer is not None:
+            if (
+                not isinstance(normalizer, dict)
+                or normalizer.get("type") != "NFC"
+            ):
+                raise ConversionError(
+                    "only no normalizer or the NFC normalizer is supported"
+                )
+            nfc_normalization = True
+
     return (
         [token for token in tokens if token is not None],
         merges,
         added_names,
         added_ids,
+        nfc_normalization,
     )
 
 
@@ -229,6 +245,7 @@ def add_talker_metadata(
     merges: list[str],
     added_names: list[str],
     added_ids: list[int],
+    nfc_normalization: bool,
     file_type: int,
 ) -> None:
     talker = model_config["talker_config"]
@@ -268,6 +285,10 @@ def add_talker_metadata(
         raise ConversionError("tokenizer eos_token is missing from vocabulary")
     writer.add_int32("tokenizer.ggml.padding_token_id", token_to_id[pad_token])
     writer.add_int32("tokenizer.ggml.eos_token_id", token_to_id[eos_token])
+    writer.add_bool(
+        "qwen3_tts.text.nfc_normalization",
+        nfc_normalization,
+    )
     writer.add_array("tokenizer.ggml.tokens", tokens)
     writer.add_array("tokenizer.ggml.merges", merges)
     writer.add_array("tokenizer.ggml.added_token_names", added_names)
@@ -735,7 +756,13 @@ def convert(args: argparse.Namespace) -> None:
     tokenizer_config = load_json(model_dir / "tokenizer_config.json")
     speech_config = load_json(model_dir / "speech_tokenizer" / "config.json")
     generation_config = load_json(model_dir / "generation_config.json")
-    tokens, merges, added_names, added_ids = build_tokenizer(model_dir, tokenizer_config)
+    (
+        tokens,
+        merges,
+        added_names,
+        added_ids,
+        nfc_normalization,
+    ) = build_tokenizer(model_dir, tokenizer_config)
 
     include_encoder = not args.decoder_only
     talker_dtypes = scan_tensor_dtypes(safe_open, model_file, include_encoder=True)
@@ -775,6 +802,7 @@ def convert(args: argparse.Namespace) -> None:
         merges,
         added_names,
         added_ids,
+        nfc_normalization,
         file_type_for_dtypes(talker_dtypes),
     )
     talker_count, written_talker_dtypes = add_safetensors(

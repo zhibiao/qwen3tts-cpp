@@ -54,6 +54,7 @@ private:
     std::unordered_map<std::string, uint32_t> merge_ranks_;
     std::vector<AddedToken> added_tokens_;
     PromptConfig prompt_;
+    bool nfc_normalization_ = true;
 };
 
 } // namespace qwen3_tts

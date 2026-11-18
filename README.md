@@ -8,6 +8,7 @@
 - Qwen3-TTS 12 Hz CustomVoice 0.6B / 1.7B
 - speaker、language 和 speaker dialect
 - TextTokenizer -> Talker -> CodePredictor -> SpeechDecoder 完整链路
+- TextTokenizer 使用 uni-algo 处理 UTF-8、Unicode 属性和可选 NFC，保留原生 Qwen byte-level BPE
 - 24 kHz PCM16 WAV 输出
 - CPU 和 CUDA backend
 - Talker `q8_0` / `bf16` 权重转换
@@ -40,7 +41,7 @@ text
 | `src/talker.*` | Talker Transformer、RoPE、Flash Attention、KV cache |
 | `src/code_predictor.*` | 每帧预测 c1..c15，固定 KV view 和 decode graph |
 | `src/speech_tokenizer.*` | RVQ、Transformer、上采样和 DAC SpeechDecoder |
-| `src/text_tokenizer.*` | byte-level BPE 和 Qwen 特殊 prompt |
+| `src/text_tokenizer*.{h,cpp}` | uni-algo Unicode/NFC、原生 Qwen byte-level BPE 和特殊 prompt |
 | `src/qwen3_tts.*` | 运行时上下文、模型生命周期、CustomVoice prompt 和生成循环 |
 | `src/gguf_model.*` | GGUF metadata/tensor 读取 |
 | `app/qwen3tts_cli.cpp` | 命令行加载、生成、解码 WAV |
@@ -54,9 +55,9 @@ CPU fallback 和两个 GGUF，后者持有 tokenizer、Talker、CodePredictor �
 运行时需要两个 GGUF：
 
 ```text
-testdata/qwen3-tts-talker-0.6b-customvoice-bf16.gguf
-testdata/qwen3-tts-talker-1.7b-customvoice-bf16.gguf
-testdata/qwen3-tts-speech-tokenizer-12hz-f32.gguf
+models/qwen3-tts-talker-0.6b-customvoice-bf16.gguf
+models/qwen3-tts-talker-1.7b-customvoice-bf16.gguf
+models/qwen3-tts-speech-tokenizer-12hz-f32.gguf
 ```
 
 Talker GGUF 包含 TextTokenizer、Talker、CodePredictor、speaker/language 和生成
@@ -77,8 +78,8 @@ build/bin/Release/
 
 ```powershell
 .\build\bin\Release\qwen3tts-cli.exe `
-  --model .\testdata\qwen3-tts-talker-0.6b-customvoice-bf16.gguf `
-  --speech-tokenizer .\testdata\qwen3-tts-speech-tokenizer-12hz-f32.gguf `
+  --model .\models\qwen3-tts-talker-0.6b-customvoice-bf16.gguf `
+  --speech-tokenizer .\models\qwen3-tts-speech-tokenizer-12hz-f32.gguf `
   --text "今年是中国第三次担任APEC东道主。中方在全国16座城市累计举办300多场会议和活动。" `
   --speaker serena `
   --language Chinese `
@@ -87,7 +88,7 @@ build/bin/Release/
   --greedy `
   --device CUDA0 `
   --threads 8 `
-  --output .\testdata\output.wav
+  --output .\output.wav
 ```
 
 列出 backend 设备或模型支持的 speaker：
@@ -95,7 +96,7 @@ build/bin/Release/
 ```powershell
 .\build\bin\Release\qwen3tts-cli.exe --list-devices
 .\build\bin\Release\qwen3tts-cli.exe `
-  --model .\testdata\qwen3-tts-talker-0.6b-customvoice-q8_0.gguf `
+  --model .\models\qwen3-tts-talker-0.6b-customvoice-q8_0.gguf `
   --list-speakers
 ```
 
@@ -146,7 +147,7 @@ python -m pip install -r .\requirements.txt
 
 python .\convert_hf_to_gguf.py `
   --input .\docs\qwen3-tts\models\Qwen3-TTS-12Hz-0.6B-CustomVoice `
-  --output-dir .\testdata
+  --output-dir .\models
 ```
 
 转换器保留源 tensor dtype。默认把 SpeechTokenizer Encoder tensor 一并写入 GGUF，
@@ -156,8 +157,8 @@ Talker 权重转换支持 `q8_0` 和 `bf16`：
 
 ```powershell
 .\.venv\Scripts\python.exe .\quantize_gguf.py `
-  --input .\testdata\qwen3-tts-talker-0.6b-customvoice-bf16.gguf `
-  --output .\testdata\qwen3-tts-talker-0.6b-customvoice-q8_0.gguf `
+  --input .\models\qwen3-tts-talker-0.6b-customvoice-bf16.gguf `
+  --output .\models\qwen3-tts-talker-0.6b-customvoice-q8_0.gguf `
   --type q8_0
 ```
 

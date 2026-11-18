@@ -70,6 +70,7 @@ struct TextTokenizerConfig {
     std::vector<std::string> merges;
     std::vector<std::string> added_token_names;
     std::vector<int32_t> added_token_ids;
+    bool nfc_normalization = true;
 };
 
 struct TalkerConfig {

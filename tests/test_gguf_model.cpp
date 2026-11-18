@@ -84,5 +84,6 @@ int main() {
     CHECK_EQ_I64(config.speech.tokenizer.decode_upsample_rate, 1920);
     CHECK_EQ_I64(config.talker.generation.max_new_tokens, 8192);
     CHECK_EQ_I64(config.talker.decoder.num_ctx, 2048);
+    CHECK(!config.talker.text_tokenizer.nfc_normalization);
     return 0;
 }

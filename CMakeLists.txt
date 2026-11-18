@@ -73,7 +73,14 @@ add_subdirectory(vendor/ggml-0.29.0)
 function(qwen3_tts_configure_target target)
     target_include_directories(${target} PRIVATE
         ${PROJECT_SOURCE_DIR}/src
+        ${PROJECT_SOURCE_DIR}/vendor
     )
+    target_compile_definitions(${target} PRIVATE
+        UNI_ALGO_STATIC_DATA
+    )
+    if(MSVC)
+        target_compile_options(${target} PRIVATE /utf-8)
+    endif()
     target_link_libraries(${target} PRIVATE ggml)
 endfunction()
 
@@ -84,6 +91,7 @@ set(QWEN3_TTS_CORE_SOURCES
     ${PROJECT_SOURCE_DIR}/src/code_predictor.cpp
     ${PROJECT_SOURCE_DIR}/src/sampler.cpp
     ${PROJECT_SOURCE_DIR}/src/text_tokenizer.cpp
+    ${PROJECT_SOURCE_DIR}/src/text_tokenizer_internal.cpp
     ${PROJECT_SOURCE_DIR}/src/speech_tokenizer.cpp
     ${PROJECT_SOURCE_DIR}/src/qwen3_tts.cpp
 )
