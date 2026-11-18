@@ -53,7 +53,8 @@ CPU fallback 和两个 GGUF，后者持有 tokenizer、Talker、CodePredictor �
 
 ## 模型文件
 
-运行时需要两个 GGUF：
+运行时需要两类 GGUF：一个 Talker GGUF（从以下文件中选择一个）和一个共享的
+SpeechTokenizer GGUF：
 
 ```text
 models/qwen3-tts-talker-0.6b-customvoice-bf16.gguf
@@ -239,6 +240,19 @@ F32 GGUF。`q8_0` 和 `bf16` 都可能改变数值，不保证生成 code 与原
 测试命令、覆盖范围和 golden 场景见
 [docs/TESTING.md](docs/TESTING.md)。
 
+## RTF 基准
+
+| 模型 | 格式 | 码流生成 | Decoder | RTF |
+|---|---|---:|---:|---:|
+| 0.6B（原基准） | BF16 | 0.57s | 0.08s | 0.508 |
+| 0.6B（原基准） | Q8_0 | 0.37s | 0.11s | 0.375 |
+| 1.7B（原基准） | BF16 | 0.78s | 0.08s | 0.672 |
+| 1.7B（原基准） | Q8_0 | 0.45s | 0.11s | 0.438 |
+| 0.6B（本次） | BF16 | 0.30s | 0.08s | 0.297 |
+| 0.6B（本次） | Q8_0 | 0.20s | 0.09s | 0.227 |
+| 1.7B（本次） | BF16 | 0.38s | 0.08s | 0.359 |
+| 1.7B（本次） | Q8_0 | 0.25s | 0.09s | 0.266 |
+
 ## 性能与限制
 
 Release 下主要瓶颈是 CodePredictor。每帧包含一次 bootstrap 和 14 个串行 decode
@@ -246,52 +260,10 @@ Release 下主要瓶颈是 CodePredictor。每帧包含一次 bootstrap 和 14 �
 无损 F32 RMSNorm、固定 KV view、打包 code embedding/LM head、图内 argmax 和
 持久 scheduler plan。
 
-0.6B、16 帧、8 threads 的 RTX 2060 CUDA 参考数据为：码流生成 0.57 s、
-SpeechDecoder 0.08 s。性能会随模型、硬件和输入变化。
-
 Talker KV cache 默认 `num_ctx=2048`，可通过 GGUF
 `qwen3_tts.talker.num_ctx` 覆盖。prompt 与生成帧数之和不能超过该值。
 
 Debug 构建较慢，并会输出更多 ggml allocator 日志；性能测试应使用对应 preset
 的 Release 产物，例如 `build/windows-cuda/bin/Release` 或
 `build/linux-cuda/bin`。
-
-## RTF 基准
-
-测试设备：
-
-```text
-GPU: NVIDIA GeForce RTX 2060 6 GB
-CPU: AMD Ryzen 7 4800H
-build: Windows windows-cuda Release
-```
-
-固定参数：
-
-```text
-text = 今天，中国已经成为亚太贸易自由化和本地区发达供应链的重要基石。
-greedy
-max-new-tokens = 16
-seed = 1234
-threads = 8
-device = CUDA0
-```
-
-16 帧对应 1.28 s 音频。每项耗时取 3 次运行的中位数。
-
-```text
-RTF = (码流生成 + SpeechDecoder) / 音频时长
-```
-
-模型加载和 WAV 写入不计入 RTF。
-
-| 模型 | 格式 | 码流生成 | Decoder | RTF |
-|---|---:|---:|---:|---:|
-| 0.6B | BF16 | 0.57s | 0.08s | 0.508 |
-| 0.6B | Q8_0 | 0.37s | 0.11s | 0.375 |
-| 1.7B | BF16 | 0.78s | 0.08s | 0.672 |
-| 1.7B | Q8_0 | 0.45s | 0.11s | 0.438 |
-
-Q8_0 相比 BF16 的 RTF 降低约 26%–35%，但 Q8_0 是有损量化。相同输入下生成的
-greedy code 可能分叉，因此还需要通过音频质量和 ASR 可懂度验收。
 

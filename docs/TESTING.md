@@ -53,7 +53,7 @@ Golden 测试包括：
 - Talker/CodePredictor 与 PyTorch 的 hidden/logits 数值对照
 - CustomVoice prompt 与固定 codes 的 SpeechDecoder 音频
 - 0.6B/1.7B 文本到 codes/audio 端到端结果
-- 无 CUDA 环境下可跳过的 CUDA golden
+- CUDA 构建启用时运行的 CUDA golden
 
 CLI 场景覆盖短中文、中文标点、英文、中英混合、长混合文本和 1.7B 短句。
 这些场景使用同一批 PyTorch codes/audio golden，并校验 WAV RIFF header、
