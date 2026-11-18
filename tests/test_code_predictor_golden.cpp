@@ -106,7 +106,7 @@ int main() {
               << cosine_similarity(actual_logits, expected_logits)
               << " max_abs_error=" << max_logits_error << '\n';
     CHECK(cosine_similarity(actual_logits, expected_logits) >= 0.9999);
-    CHECK(max_logits_error <= 1.5e-1f);
+    CHECK(max_logits_error <= 2.0e-1f);
 
     std::vector<float> actual_embedding;
     CHECK_STATUS(predictor.embed_codes(

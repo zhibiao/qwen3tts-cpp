@@ -1,6 +1,18 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.21)
 
-project(qwen3_tts_cpp LANGUAGES C CXX)
+set(CMAKE_POLICY_DEFAULT_CMP0194 NEW)
+
+project(qwen3_tts_cpp VERSION 0.1.0 LANGUAGES C CXX)
+
+if(MSVC AND CMAKE_CXX_COMPILER)
+    set(
+        CMAKE_ASM_COMPILER
+        "${CMAKE_CXX_COMPILER}"
+        CACHE FILEPATH
+        "MSVC-compatible assembler compiler"
+        FORCE
+    )
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,6 +22,27 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # 所有可执行文件与 ggml 的共享库统一输出到 <build>/bin/<config>，
 # 这样 exe 旁边就是全部 backend DLL，不需要额外拷贝。
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+if(UNIX AND NOT APPLE)
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
+    set(CMAKE_BUILD_RPATH "$ORIGIN")
+    set(CMAKE_INSTALL_RPATH "$ORIGIN")
+endif()
+
+set(
+    QWEN3TTS_MODEL_DIR
+    "${PROJECT_SOURCE_DIR}/models"
+    CACHE PATH
+    "Directory containing runtime GGUF models"
+)
+set(
+    QWEN3TTS_TEST_DATA_DIR
+    "${PROJECT_SOURCE_DIR}/testdata"
+    CACHE PATH
+    "Directory containing golden test fixtures"
+)
 
 set(BUILD_SHARED_LIBS ON CACHE BOOL "build shared libraries")
 
@@ -27,23 +60,18 @@ set(GGML_CCACHE OFF CACHE BOOL "" FORCE)
 option(
     QWEN3TTS_ENABLE_CUDA
     "Build Qwen3TTS with the GGML CUDA backend"
-    ON
-)
-set(
-    _QWEN3TTS_DEFAULT_CUDA_ARCHITECTURES
-    "75-real;86-real;89-real;120-real;120-virtual"
+    OFF
 )
 set(
     QWEN3TTS_CUDA_ARCHITECTURES
-    "${_QWEN3TTS_DEFAULT_CUDA_ARCHITECTURES}"
+    "native"
     CACHE STRING
-    "CUDA architectures: -real = SASS, -virtual = PTX, bare = both"
+    "CUDA architectures: native or a semicolon-separated list"
 )
-# 旧 CMakeCache 里可能留着空值；空值时回落到默认列表。
 if(NOT QWEN3TTS_CUDA_ARCHITECTURES)
     set(
         QWEN3TTS_CUDA_ARCHITECTURES
-        "${_QWEN3TTS_DEFAULT_CUDA_ARCHITECTURES}"
+        "native"
         CACHE STRING "" FORCE
     )
 endif()
@@ -66,6 +94,10 @@ else()
     set(GGML_CUDA OFF CACHE BOOL "" FORCE)
     set(GGML_CUDA_GRAPHS OFF CACHE BOOL "" FORCE)
     message(STATUS "Qwen3TTS CUDA backend disabled")
+endif()
+
+if(POLICY CMP0194)
+    cmake_policy(SET CMP0194 NEW)
 endif()
 
 add_subdirectory(vendor/ggml-0.29.0)
@@ -102,10 +134,14 @@ add_executable(qwen3tts-cli
     ${PROJECT_SOURCE_DIR}/src/wav_writer.cpp
 )
 qwen3_tts_configure_target(qwen3tts-cli)
+target_compile_definitions(qwen3tts-cli PRIVATE
+    QWEN3TTS_VERSION="${PROJECT_VERSION}"
+)
 if(WIN32)
     target_link_libraries(qwen3tts-cli PRIVATE shell32)
 endif()
 
+option(BUILD_TESTING "Build Qwen3TTS tests" OFF)
 include(CTest)
 
 if(BUILD_TESTING)

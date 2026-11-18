@@ -1,8 +1,8 @@
 set(QWEN3_TTS_TEST_GGUF
-    "${PROJECT_SOURCE_DIR}/models/qwen3-tts-talker-0.6b-customvoice-bf16.gguf"
+    "${QWEN3TTS_MODEL_DIR}/qwen3-tts-talker-0.6b-customvoice-bf16.gguf"
 )
 set(QWEN3_TTS_TEST_SPEECH_GGUF
-    "${PROJECT_SOURCE_DIR}/models/qwen3-tts-speech-tokenizer-12hz-f32.gguf"
+    "${QWEN3TTS_MODEL_DIR}/qwen3-tts-speech-tokenizer-12hz-f32.gguf"
 )
 
 if(EXISTS "${QWEN3_TTS_TEST_GGUF}" AND
@@ -113,7 +113,7 @@ if(EXISTS "${QWEN3_TTS_TEST_GGUF}" AND
         "${QWEN3_TTS_TEST_GGUF}"
     )
     set(QWEN3_TTS_TALKER_GOLDEN_DIR
-        "${PROJECT_SOURCE_DIR}/testdata/talker-golden"
+        "${QWEN3TTS_TEST_DATA_DIR}/talker-golden"
     )
     if(EXISTS "${QWEN3_TTS_TEST_GGUF_F32}" AND
        EXISTS "${QWEN3_TTS_TALKER_GOLDEN_DIR}/manifest.json")
@@ -130,7 +130,7 @@ if(EXISTS "${QWEN3_TTS_TEST_GGUF}" AND
         add_test(NAME talker_golden COMMAND test_talker_golden)
 
         set(QWEN3_TTS_CODE_PREDICTOR_GOLDEN_DIR
-            "${PROJECT_SOURCE_DIR}/testdata/code-predictor-golden"
+            "${QWEN3TTS_TEST_DATA_DIR}/code-predictor-golden"
         )
         if(EXISTS "${QWEN3_TTS_CODE_PREDICTOR_GOLDEN_DIR}/manifest.json")
             add_executable(test_code_predictor_golden
@@ -151,7 +151,7 @@ if(EXISTS "${QWEN3_TTS_TEST_GGUF}" AND
         endif()
 
         set(QWEN3_TTS_STREAM_GOLDEN_DIR
-            "${PROJECT_SOURCE_DIR}/testdata/qwen3tts-stream-golden"
+            "${QWEN3TTS_TEST_DATA_DIR}/qwen3tts-stream-golden"
         )
         if(EXISTS "${QWEN3_TTS_STREAM_GOLDEN_DIR}/manifest.json")
             add_executable(test_qwen3tts_golden
@@ -172,7 +172,7 @@ if(EXISTS "${QWEN3_TTS_TEST_GGUF}" AND
         endif()
 
         set(QWEN3_TTS_CUSTOMVOICE_GOLDEN_DIR
-            "${PROJECT_SOURCE_DIR}/testdata/custom-voice-golden"
+            "${QWEN3TTS_TEST_DATA_DIR}/custom-voice-golden"
         )
         if(EXISTS "${QWEN3_TTS_CUSTOMVOICE_GOLDEN_DIR}/manifest.json")
             add_executable(test_qwen3tts_customvoice_golden
@@ -200,10 +200,10 @@ if(EXISTS "${QWEN3_TTS_TEST_GGUF}" AND
         endif()
 
         set(QWEN3_TTS_TEST_GGUF_1_7_F32
-            "${PROJECT_SOURCE_DIR}/models/qwen3-tts-talker-1.7b-customvoice-bf16.gguf"
+            "${QWEN3TTS_MODEL_DIR}/qwen3-tts-talker-1.7b-customvoice-bf16.gguf"
         )
         set(QWEN3_TTS_1_7_GOLDEN_DIR
-            "${PROJECT_SOURCE_DIR}/testdata"
+            "${QWEN3TTS_TEST_DATA_DIR}"
         )
         if(EXISTS "${QWEN3_TTS_TEST_GGUF_1_7_F32}" AND
            EXISTS "${QWEN3_TTS_1_7_GOLDEN_DIR}/1.7b-reference-3-codes.bin")
@@ -252,25 +252,25 @@ else()
 endif()
 
 set(QWEN3_TTS_EXTRA_GGUF
-    "${PROJECT_SOURCE_DIR}/models/qwen3-tts-talker-0.6b-customvoice-bf16.gguf"
+    "${QWEN3TTS_MODEL_DIR}/qwen3-tts-talker-0.6b-customvoice-bf16.gguf"
 )
 set(QWEN3_TTS_EXTRA_SPEECH_GGUF
-    "${PROJECT_SOURCE_DIR}/models/qwen3-tts-speech-tokenizer-12hz-f32.gguf"
+    "${QWEN3TTS_MODEL_DIR}/qwen3-tts-speech-tokenizer-12hz-f32.gguf"
 )
 set(QWEN3_TTS_EXTRA_Q8_GGUF
-    "${PROJECT_SOURCE_DIR}/models/qwen3-tts-talker-0.6b-customvoice-q8_0.gguf"
+    "${QWEN3TTS_MODEL_DIR}/qwen3-tts-talker-0.6b-customvoice-q8_0.gguf"
 )
 set(QWEN3_TTS_EXTRA_1_7_GGUF
-    "${PROJECT_SOURCE_DIR}/models/qwen3-tts-talker-1.7b-customvoice-bf16.gguf"
+    "${QWEN3TTS_MODEL_DIR}/qwen3-tts-talker-1.7b-customvoice-bf16.gguf"
 )
 set(QWEN3_TTS_EXTRA_TEXT_GOLDEN
-    "${PROJECT_SOURCE_DIR}/testdata/text-tokenizer-golden/cases.json"
+    "${QWEN3TTS_TEST_DATA_DIR}/text-tokenizer-golden/cases.json"
 )
 set(QWEN3_TTS_EXTRA_CUSTOMVOICE_GOLDEN
-    "${PROJECT_SOURCE_DIR}/testdata/custom-voice-golden"
+    "${QWEN3TTS_TEST_DATA_DIR}/custom-voice-golden"
 )
 set(QWEN3_TTS_EXTRA_E2E_GOLDEN
-    "${PROJECT_SOURCE_DIR}/testdata/qwen3tts-e2e-golden"
+    "${QWEN3TTS_TEST_DATA_DIR}/qwen3tts-e2e-golden"
 )
 
 if(NOT EXISTS "${QWEN3_TTS_EXTRA_GGUF}" OR
@@ -356,15 +356,15 @@ if(EXISTS "${QWEN3_TTS_EXTRA_E2E_GOLDEN}/manifest.json")
 endif()
 
 if(QWEN3TTS_ENABLE_CUDA AND
-   EXISTS "${PROJECT_SOURCE_DIR}/testdata/talker-golden/manifest.json" AND
-   EXISTS "${PROJECT_SOURCE_DIR}/testdata/code-predictor-golden/manifest.json")
+   EXISTS "${QWEN3TTS_TEST_DATA_DIR}/talker-golden/manifest.json" AND
+   EXISTS "${QWEN3TTS_TEST_DATA_DIR}/code-predictor-golden/manifest.json")
     add_extra_test(test_cuda_golden
         test_cuda_golden.cpp
         ${QWEN3_TTS_CORE_SOURCES}
     )
     target_compile_definitions(test_cuda_golden PRIVATE
-        QWEN3_TTS_TALKER_GOLDEN_DIR="${PROJECT_SOURCE_DIR}/testdata/talker-golden"
-        QWEN3_TTS_CODE_PREDICTOR_GOLDEN_DIR="${PROJECT_SOURCE_DIR}/testdata/code-predictor-golden"
+        QWEN3_TTS_TALKER_GOLDEN_DIR="${QWEN3TTS_TEST_DATA_DIR}/talker-golden"
+        QWEN3_TTS_CODE_PREDICTOR_GOLDEN_DIR="${QWEN3TTS_TEST_DATA_DIR}/code-predictor-golden"
     )
     add_test(NAME cuda_golden COMMAND test_cuda_golden)
     set_tests_properties(cuda_golden PROPERTIES SKIP_RETURN_CODE 77)
@@ -468,9 +468,28 @@ if(EXISTS "${QWEN3_TTS_EXTRA_1_7_GGUF}")
     )
 endif()
 
-set(QWEN3_TTS_EXTRA_PYTHON
-    "${PROJECT_SOURCE_DIR}/.venv/Scripts/python.exe")
-if(EXISTS "${QWEN3_TTS_EXTRA_PYTHON}")
+if(WIN32)
+    set(
+        QWEN3_TTS_VENV_PYTHON
+        "${PROJECT_SOURCE_DIR}/.venv/Scripts/python.exe"
+    )
+else()
+    set(
+        QWEN3_TTS_VENV_PYTHON
+        "${PROJECT_SOURCE_DIR}/.venv/bin/python"
+    )
+endif()
+
+if(EXISTS "${QWEN3_TTS_VENV_PYTHON}")
+    set(QWEN3_TTS_EXTRA_PYTHON "${QWEN3_TTS_VENV_PYTHON}")
+else()
+    find_package(Python3 COMPONENTS Interpreter QUIET)
+    if(Python3_Interpreter_FOUND)
+        set(QWEN3_TTS_EXTRA_PYTHON "${Python3_EXECUTABLE}")
+    endif()
+endif()
+
+if(QWEN3_TTS_EXTRA_PYTHON)
     add_test(NAME quantize_gguf_presets
         COMMAND "${QWEN3_TTS_EXTRA_PYTHON}"
             "${PROJECT_SOURCE_DIR}/tests/test_quantize_gguf.py"
