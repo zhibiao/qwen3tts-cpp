@@ -236,35 +236,8 @@ F32 GGUF。`q8_0` 和 `bf16` 都可能改变数值，不保证生成 code 与原
 
 ## 测试
 
-测试使用独立的 `*-tests` preset，默认构建不会编译测试：
-
-```text
-cmake --preset windows-cpu-tests
-cmake --build --preset windows-cpu-tests --parallel
-ctest --preset windows-cpu
-
-cmake --preset windows-cuda-tests
-cmake --build --preset windows-cuda-tests --parallel
-ctest --preset windows-cuda
-
-cmake --preset linux-cpu-tests
-cmake --build --preset linux-cpu-tests --parallel
-ctest --preset linux-cpu
-
-cmake --preset linux-cuda-tests
-cmake --build --preset linux-cuda-tests --parallel
-ctest --preset linux-cuda
-```
-
-测试覆盖 GGUF/config、TextTokenizer、Talker、CodePredictor、SpeechDecoder、
-transposed convolution、sampler、WAV writer、模型生命周期、GGUF 转换器和
-Talker 量化脚本。Golden 包括 Talker/CodePredictor 数值、CustomVoice prompt、
-固定 codes 的 SpeechDecoder 音频、0.6B/1.7B 文本到 codes/audio 端到端结果，
-以及可跳过无 CUDA 环境的 CUDA Talker/CodePredictor golden。
-
-CLI 端到端场景覆盖短中文、中文标点、英文、中英混合、长混合文本和 1.7B 短句；
-同一批文本另有 PyTorch codes/audio golden，当前 0.6B 五类场景和 1.7B 短混合
-句均通过。每个 CLI 场景生成 WAV 后还会校验 RIFF header、采样率和帧对齐。
+测试命令、覆盖范围、golden 场景和 RTF 基准见
+[docs/TESTING.md](docs/TESTING.md)。
 
 ## 性能与限制
 
@@ -283,33 +256,3 @@ Debug 构建较慢，并会输出更多 ggml allocator 日志；性能测试应�
 的 Release 产物，例如 `build/windows-cuda/bin/Release` 或
 `build/linux-cuda/bin`。
 
-## RTF 基准
-
-测试设备为 RTX 2060 6 GB、Ryzen 7 4800H、Windows `windows-cuda` Release。
-每项耗时取 3 次运行的中位数。
-固定参数：
-
-```text
-text = 今天，中国已经成为亚太贸易自由化和本地区发达供应链的重要基石。
-greedy
-max-new-tokens = 16
-seed = 1234
-threads = 8
-device = CUDA0
-```
-
-本次 16 帧对应 1.28 s 音频。
-
-RTF =
-`(码流生成 + SpeechDecoder) / 音频时长`，不含模型加载和 WAV 写入。
-
-| 模型 | 格式 | 码流生成 | Decoder | RTF |
-|---|---:|---:|---:|---:|
-| 0.6B | BF16 | 0.57s | 0.08s | 0.508 |
-| 0.6B | Q8_0 | 0.37s | 0.11s | 0.375 |
-| 1.7B | BF16 | 0.78s | 0.08s | 0.672 |
-| 1.7B | Q8_0 | 0.45s | 0.11s | 0.438 |
-
-Q8_0 相比 BF16 的 RTF 降低约 26%–35%，但属于有损量化。相同输入下生成的
-greedy code 可能分叉，因此不能仅凭 RTF 选择 Q8_0，还需要音频质量与 ASR
-可懂度验收。

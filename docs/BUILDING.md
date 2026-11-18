@@ -77,20 +77,8 @@ they can be stored together in `bin/`.
 
 ## Tests
 
-Default presets set `BUILD_TESTING=OFF`. Use `*-tests` presets when test
-targets are needed:
-
-```powershell
-cmake --preset windows-cuda-tests
-cmake --build --preset windows-cuda-tests --parallel
-ctest --preset windows-cuda
-```
-
-```bash
-cmake --preset linux-cpu-tests
-cmake --build --preset linux-cpu-tests --parallel
-ctest --preset linux-cpu
-```
+Default presets set `BUILD_TESTING=OFF`. Test commands, coverage, and RTF
+benchmarks are documented in [TESTING.md](TESTING.md).
 
 ## CUDA architectures
 
