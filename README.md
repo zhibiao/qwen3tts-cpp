@@ -104,7 +104,7 @@ Linux：
 ./build/linux-cuda/bin/qwen3tts-cli \
   --model models/qwen3-tts-talker-0.6b-customvoice-bf16.gguf \
   --speech-tokenizer models/qwen3-tts-speech-tokenizer-12hz-f32.gguf \
-  --text "今年是中国第三次担任APEC东道主。" \
+  --text "今年是中国第三次担任APEC东道主。中方在全国16座城市累计举办300多场会议和活动。" \
   --speaker serena \
   --language Chinese \
   --max-new-tokens 512 \
